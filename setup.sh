@@ -30,17 +30,23 @@ fi
 if [[ "$provider" == kimi ]]; then
   print 'Подписка Kimi Code. Адрес подключения: https://api.kimi.ai/coding/'
   print 'Ключ: https://www.kimi.ai/code/console'
-  print '1 — K3 256K: Plus и выше, обычная работа'
-  print '2 — K3 1M: Pro и выше, большой проект'
-  print '3 — K2.8 Preview: Plus и выше'
-  print '4 — HighSpeed: Pro и выше, быстрый вывод'
-  read -r 'choice?Выбери модель [1–4, Enter = 1]: '
+  print '1 — K3.1 Pro 256K: Plus и выше, обычная работа'
+  print '2 — K3.1 Pro 1M: Pro и выше, большой проект'
+  print '3 — K3.1 Pro HighSpeed 1M: Pro и выше, быстрый вывод, расход квоты ×2'
+  print '4 — K3 256K: Plus и выше, прошлое поколение'
+  print '5 — K3 1M: Pro и выше, прошлое поколение'
+  print '6 — K2.8 Preview 1M: Plus и выше'
+  print '7 — K2.7 HighSpeed 256K: Pro и выше, быстрый вывод, расход квоты ×3'
+  read -r 'choice?Выбери модель [1–7, Enter = 1]: '
   case "${choice:-1}" in
-    1) model='k3-256k'; context=262144 ;;
-    2) model='k3[1m]'; context=1048576 ;;
-    3) model='kimi-for-coding'; context=1048576 ;;
-    4) model='kimi-for-coding-highspeed'; context=262144 ;;
-    *) print -u2 'Нужен номер от 1 до 4. Повтори команду настройки.'; exit 1 ;;
+    1) model='k3.1-pro'; context=262144; effort=max ;;
+    2) model='k3.1-pro[1m]'; context=1048576; effort=max ;;
+    3) model='k3.1-pro-highspeed[1m]'; context=1048576; effort=max ;;
+    4) model='k3-256k'; context=262144; effort=high ;;
+    5) model='k3[1m]'; context=1048576; effort=high ;;
+    6) model='kimi-for-coding'; context=1048576; effort=high ;;
+    7) model='kimi-for-coding-highspeed'; context=262144; effort=high ;;
+    *) print -u2 'Нужен номер от 1 до 7. Повтори команду настройки.'; exit 1 ;;
   esac
 else
   print 'Подписка GLM Coding Plan. Ключ: https://z.ai/manage-apikey/apikey-list'
@@ -53,6 +59,7 @@ else
     *) print -u2 'Нужен номер 1 или 2. Повтори команду настройки.'; exit 1 ;;
   esac
   context=1000000
+  effort=max
 fi
 
 print 'Вставь ключ. Символы на экране не появятся — это нормально.'
@@ -63,6 +70,7 @@ print
 CHINA_MODELS_PROVIDER="$provider" \
 CHINA_MODELS_MODEL="$model" \
 CHINA_MODELS_CONTEXT="$context" \
+CHINA_MODELS_EFFORT="$effort" \
 CHINA_MODELS_KEY="$key" \
 /usr/bin/perl -MJSON::PP -MFile::Path=make_path -MFile::Copy=copy - <<'PERL'
 use strict;
@@ -145,7 +153,7 @@ my %env = (
     CLAUDE_CODE_SUBAGENT_MODEL => $model,
     CLAUDE_CODE_AUTO_COMPACT_WINDOW => $context,
     CLAUDE_CODE_MAX_CONTEXT_TOKENS => $context,
-    CLAUDE_CODE_EFFORT_LEVEL => $provider eq 'kimi' ? 'high' : 'max',
+    CLAUDE_CODE_EFFORT_LEVEL => $ENV{CHINA_MODELS_EFFORT},
 );
 $env{"ANTHROPIC_DEFAULT_${_}_MODEL"} = $model for qw(FABLE OPUS SONNET HAIKU);
 if ($provider eq 'glm') {
@@ -172,6 +180,8 @@ unset CLAUDE_CONFIG_DIR ANTHROPIC_BASE_URL ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKE
 unset ANTHROPIC_MODEL ANTHROPIC_SMALL_FAST_MODEL CLAUDE_CODE_SUBAGENT_MODEL
 unset ANTHROPIC_DEFAULT_FABLE_MODEL ANTHROPIC_DEFAULT_OPUS_MODEL
 unset ANTHROPIC_DEFAULT_SONNET_MODEL ANTHROPIC_DEFAULT_HAIKU_MODEL
+unset ANTHROPIC_DEFAULT_FABLE_MODEL_NAME ANTHROPIC_DEFAULT_OPUS_MODEL_NAME
+unset ANTHROPIC_DEFAULT_SONNET_MODEL_NAME ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME
 unset CLAUDE_CODE_USE_BEDROCK CLAUDE_CODE_USE_VERTEX CLAUDE_CODE_USE_FOUNDRY
 unset CLAUDE_CODE_AUTO_COMPACT_WINDOW CLAUDE_CODE_MAX_CONTEXT_TOKENS CLAUDE_CODE_EFFORT_LEVEL
 exec claude --settings "$profile" "$@"

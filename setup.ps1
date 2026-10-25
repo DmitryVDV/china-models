@@ -69,18 +69,24 @@ $state = Read-JsonObject $stateFile
 if ($Provider -eq 'kimi') {
     Write-Host 'Подписка Kimi Code: https://api.kimi.ai/coding/'
     Write-Host 'Ключ: https://www.kimi.ai/code/console'
-    Write-Host '1 - K3 256K: Plus и выше'
-    Write-Host '2 - K3 1M: Pro и выше'
-    Write-Host '3 - K2.8 Preview: Plus и выше'
-    Write-Host '4 - HighSpeed: Pro и выше'
-    $choice = Read-Host 'Выбери модель [1-4, Enter = 1]'
+    Write-Host '1 - K3.1 Pro 256K: Plus и выше, обычная работа'
+    Write-Host '2 - K3.1 Pro 1M: Pro и выше, большой проект'
+    Write-Host '3 - K3.1 Pro HighSpeed 1M: Pro и выше, быстрый вывод, расход квоты x2'
+    Write-Host '4 - K3 256K: Plus и выше, прошлое поколение'
+    Write-Host '5 - K3 1M: Pro и выше, прошлое поколение'
+    Write-Host '6 - K2.8 Preview 1M: Plus и выше'
+    Write-Host '7 - K2.7 HighSpeed 256K: Pro и выше, быстрый вывод, расход квоты x3'
+    $choice = Read-Host 'Выбери модель [1-7, Enter = 1]'
     if ([string]::IsNullOrWhiteSpace($choice)) { $choice = '1' }
     switch ($choice) {
-        '1' { $model = 'k3-256k'; $context = '262144' }
-        '2' { $model = 'k3[1m]'; $context = '1048576' }
-        '3' { $model = 'kimi-for-coding'; $context = '1048576' }
-        '4' { $model = 'kimi-for-coding-highspeed'; $context = '262144' }
-        default { throw 'Нужен номер от 1 до 4. Повтори настройку.' }
+        '1' { $model = 'k3.1-pro'; $context = '262144'; $effort = 'max' }
+        '2' { $model = 'k3.1-pro[1m]'; $context = '1048576'; $effort = 'max' }
+        '3' { $model = 'k3.1-pro-highspeed[1m]'; $context = '1048576'; $effort = 'max' }
+        '4' { $model = 'k3-256k'; $context = '262144'; $effort = 'high' }
+        '5' { $model = 'k3[1m]'; $context = '1048576'; $effort = 'high' }
+        '6' { $model = 'kimi-for-coding'; $context = '1048576'; $effort = 'high' }
+        '7' { $model = 'kimi-for-coding-highspeed'; $context = '262144'; $effort = 'high' }
+        default { throw 'Нужен номер от 1 до 7. Повтори настройку.' }
     }
     $baseUrl = 'https://api.kimi.ai/coding/'
 } else {
@@ -95,6 +101,7 @@ if ($Provider -eq 'kimi') {
         default { throw 'Нужен номер 1 или 2. Повтори настройку.' }
     }
     $context = '1000000'
+    $effort = 'max'
     $baseUrl = 'https://api.z.ai/api/anthropic'
 }
 Write-Host 'Вставь ключ. Символы не отображаются. При повторной настройке Enter сохраняет ключ.'
@@ -132,11 +139,10 @@ $modelEnv = [ordered]@{
     CLAUDE_CODE_SUBAGENT_MODEL = $model
     CLAUDE_CODE_AUTO_COMPACT_WINDOW = $context
     CLAUDE_CODE_MAX_CONTEXT_TOKENS = $context
-    CLAUDE_CODE_EFFORT_LEVEL = 'high'
+    CLAUDE_CODE_EFFORT_LEVEL = $effort
 }
 if ($Provider -eq 'glm') {
     $modelEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL = 'glm-5.3-flash[1m]'
-    $modelEnv.CLAUDE_CODE_EFFORT_LEVEL = 'max'
     $modelEnv['CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'] = '1'
     $modelEnv['API_TIMEOUT_MS'] = '3000000'
 }
@@ -163,6 +169,8 @@ $vars = @(
     'CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_MODEL', 'ANTHROPIC_SMALL_FAST_MODEL',
     'CLAUDE_CODE_SUBAGENT_MODEL', 'ANTHROPIC_DEFAULT_FABLE_MODEL',
     'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+    'ANTHROPIC_DEFAULT_FABLE_MODEL_NAME', 'ANTHROPIC_DEFAULT_OPUS_MODEL_NAME',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL_NAME', 'ANTHROPIC_DEFAULT_HAIKU_MODEL_NAME',
     'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_USE_FOUNDRY',
     'CLAUDE_CODE_AUTO_COMPACT_WINDOW', 'CLAUDE_CODE_MAX_CONTEXT_TOKENS', 'CLAUDE_CODE_EFFORT_LEVEL'
 )
